@@ -36,7 +36,7 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - uses: int128/kaniko-action@v1
+      - uses: int128/kaniko-action@v1.45.0
         with:
           push: true
           tags: ${{ steps.metadata.outputs.tags }}
