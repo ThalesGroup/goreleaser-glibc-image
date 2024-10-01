@@ -20,7 +20,7 @@ on:
 #  - CONTAINERFILE_NAME is name and location of the Containerfile.
 env:
     KANIKO_BUILD_CONTEXT: "${{ github.workspace }}"
-    CONTAINERFILE_NAME: "${{ github.workspace }}/Containerfile.goreleaser-ko-cosign-trivy-syft-x86-arm64-non-root-usr"
+    CONTAINERFILE_NAME: "${{ github.workspace }}/Containerfile.goreleaser-ko-cosign-trivy-syft-x86-arm64-root-usr"
 
 jobs:
   build:
