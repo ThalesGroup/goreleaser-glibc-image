@@ -1,0 +1,48 @@
+# Using Kaniko: refer to the following documentations:
+# * https://github.com/marketplace/actions/kaniko-action
+# * https://github.com/int128/kaniko-action#inputs
+
+name: "Build a container that ship with goreleaser, cosign, ko-build, trivy, syft and push to GitHub Container Registry (GHCR)"
+
+on:
+    pull_request:
+      branches:
+        - main
+        - release/*
+    push:
+      branches:
+        - main
+        - tags/*
+
+# Global KANIKO Variables:
+# See: https://github.com/int128/kaniko-action
+#  - KANIKO_BUILD_CONTEXT is the path to the location of the Containerfile.
+#  - CONTAINERFILE_NAME is name and location of the Containerfile.
+env:
+    KANIKO_BUILD_CONTEXT: "${{ github.workspace }}"
+    CONTAINERFILE_NAME: "${{ github.workspace }}/Containerfile.goreleaser-ko-cosign-trivy-syft-x86-arm64-non-root-usr"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: docker/metadata-action@v3
+        id: metadata
+        with:
+          images: ghcr.io/${{ github.repository }}
+      - uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: int128/kaniko-action@v1
+        with:
+          push: true
+          tags: ${{ steps.metadata.outputs.tags }}
+          labels: ${{ steps.metadata.outputs.labels }}
+          cache: true
+          cache-repository: ghcr.io/${{ github.repository }}/cache
+          file: ${{ env.CONTAINERFILE_NAME }}
+          context: ${{ env.KANIKO_BUILD_CONTEXT }}
+          verbosity: "info"  # https://github.com/GoogleContainerTools/kaniko#flag---verbosity
