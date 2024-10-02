@@ -51,7 +51,6 @@ FROM ${BUILDER_IMAGE_REGISTRY}/${BUILDER_IMAGE_NAME}:${BUILDER_IMAGE_TAG} AS bui
 
 # Install linux/arm64 GCC
 RUN apt-get update && apt-get install -y \
-        gcc-aarch64-linux-gnu \
         git \
         curl \
         make \
