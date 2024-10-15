@@ -1,9 +1,6 @@
-Describe in this file:
-
-- team organization, roles, communication
-- the rules to be respected by your future contributors
-
 # Contributing guidelines
+
+> Page under construction. Contact Thales Open Source <oss@thalesgroup.com>.
 
 ## Team organization
 
