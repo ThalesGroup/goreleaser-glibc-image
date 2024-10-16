@@ -26,17 +26,17 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: docker/metadata-action@v4
+      - uses: actions/checkout@v4
+      - uses: docker/metadata-action@v5
         id: metadata
         with:
           images: ghcr.io/${{ github.repository }}
-      - uses: docker/login-action@v1
+      - uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - uses: int128/kaniko-action@v1.45.0
+      - uses: int128/kaniko-action@v1
         with:
           push: true
           tags: ${{ steps.metadata.outputs.tags }}
