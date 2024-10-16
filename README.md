@@ -29,13 +29,12 @@ If you are interested in contributing to the XXX project, start by reading the [
 
 ## License
 
-The chosen license in accordance with legal department must be defined into an explicit [LICENSE](https://github.com/ThalesGroup/template-project/blob/master/LICENSE) file at the root of the repository
-You can also link this file in this README section.
+Apache 2.0. See [LICENSE](LICENSE).
 
 Our container ships with `trivy`, `syft`, `cosign`, `ko-build/ko` and `goreleaser`:
 
-* [`aquasecurity/trivy`](https://github.com/aquasecurity/trivy) is under Apache-2.0 license
-* [`anchore/syft`](https://github.com/anchore/syft) is under Apache-2.0 license
-* [`sigstore/cosign/`](https://github.com/sigstore/cosign/) is under Apache-2.0 license
-* [`ko-build/ko`](https://github.com/ko-build/ko) is under Apache-2.0 license
-* [`goreleaser/goreleaser`](https://github.com/goreleaser/goreleaser) is under MIT License
+* [`aquasecurity/trivy`](https://github.com/aquasecurity/trivy) is under **Apache-2.0 license**
+* [`anchore/syft`](https://github.com/anchore/syft) is under **Apache-2.0 license**
+* [`sigstore/cosign/`](https://github.com/sigstore/cosign/) is under **Apache-2.0 license**
+* [`ko-build/ko`](https://github.com/ko-build/ko) is under **Apache-2.0 license**
+* [`goreleaser/goreleaser`](https://github.com/goreleaser/goreleaser) is under **MIT license**
