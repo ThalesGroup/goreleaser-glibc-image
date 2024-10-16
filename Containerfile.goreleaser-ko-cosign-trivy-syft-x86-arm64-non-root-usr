@@ -68,9 +68,9 @@ ARG GORELEASER_VERSION
 ARG COSIGN_VERSION
 ARG KO_VERSION
 
-RUN go install github.com/goreleaser/goreleaser/v2@v$GORELEASER_VERSION \
- && go install github.com/sigstore/cosign/v2/cmd/cosign@v$COSIGN_VERSION \
- && go install github.com/google/ko@$KO_VERSION
+RUN go install github.com/goreleaser/goreleaser/v2@v${GORELEASER_VERSION} \
+ && go install github.com/sigstore/cosign/v2/cmd/cosign@v${COSIGN_VERSION} \
+ && go install github.com/google/ko@v${KO_VERSION}
 
 #==============================================================================#
 # installing trivy
