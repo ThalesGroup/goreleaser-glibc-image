@@ -64,10 +64,12 @@ RUN apt-get update && apt-get install -y \
 FROM builder-base as buidler-goreleaser
 
 ARG GORELEASER_VERSION
+ARG COSIGN_VERSION
+ARG KO_VERSION
 
 RUN go install github.com/goreleaser/goreleaser/v2@v$GORELEASER_VERSION \
- && go install github.com/sigstore/cosign/v2/cmd/cosign@latest \
- && go install github.com/google/ko@latest
+ && go install github.com/sigstore/cosign/v2/cmd/cosign@v$COSIGN_VERSION \
+ && go install github.com/google/ko@$KO_VERSION
 
 #==============================================================================#
 # installing trivy
