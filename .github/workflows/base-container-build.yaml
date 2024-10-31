@@ -20,22 +20,47 @@ on:
 #  - CONTAINERFILE_NAME is name and location of the Containerfile.
 env:
     KANIKO_BUILD_CONTEXT: "${{ github.workspace }}"
-    CONTAINERFILE_NAME: "${{ github.workspace }}/Containerfile.goreleaser-ko-cosign-trivy-syft-x86-arm64-root-usr"
+    CONTAINERFILE_NAME: "${{ github.workspace }}/Containerfile.goreleaser-ko-cosign-trivy-syft-x86-arm64-root-usr.base"
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: docker/metadata-action@v5
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Extract Versions from Containerfile
+        id: extract
+        run: |
+          # Extract values from the Containerfile
+          GOLANG_VERSION=$(grep -m1 'ARG GOLANG_VERSION=' $CONTAINERFILE_NAME | cut -d'=' -f2)
+          echo "GOLANG_VERSION=${GOLANG_VERSION}" >> $GITHUB_ENV
+          GORELEASER_VERSION=$(grep -m1 'ARG GORELEASER_VERSION=' $CONTAINERFILE_NAME | cut -d'=' -f2)
+          echo "GORELEASER_VERSION=${GORELEASER_VERSION}" >> $GITHUB_ENV
+        env:
+          golang_version: ${{ env.GOLANG_VERSION }}
+          goreleaser_version: ${{ env.GORELEASER_VERSION }}
+
+      - name: Container metadata and tags
+        uses: docker/metadata-action@v5
         id: metadata
         with:
-          images: ghcr.io/${{ github.repository }}
+          images: ghcr.io/${{ github.repository }}-base
+          tags: |
+            type=ref,event=branch
+            type=raw,value=golang-${{ steps.extract.outputs.golang_version }}
+            type=raw,value=goreleaser-${{ steps.extract.outputs.goreleaser_version }}
+            # minimal (short sha)
+            type=sha
+            # full length sha
+            type=sha,format=long
+
       - uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+
       - uses: int128/kaniko-action@v1
         with:
           push: true
