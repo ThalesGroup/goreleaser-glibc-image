@@ -37,9 +37,6 @@ jobs:
           echo "GOLANG_VERSION=${GOLANG_VERSION}" >> $GITHUB_ENV
           GORELEASER_VERSION=$(grep -m1 'ARG GORELEASER_VERSION=' $CONTAINERFILE_NAME | cut -d'=' -f2)
           echo "GORELEASER_VERSION=${GORELEASER_VERSION}" >> $GITHUB_ENV
-        env:
-          golang_version: ${{ env.GOLANG_VERSION }}
-          goreleaser_version: ${{ env.GORELEASER_VERSION }}
 
       - name: Container metadata and tags
         uses: docker/metadata-action@v5
