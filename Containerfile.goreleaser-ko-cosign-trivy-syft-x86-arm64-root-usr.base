@@ -28,13 +28,15 @@ ARG KO_VERSION=0.16.0
 # goreleaser v2.1.0 ships with go1.22.5
 ARG GORELEASER_VERSION=2.1.0
 
+ARG DEBIAN_VERSION=bookworm
+
 # Builder image's registry
 # A Debian Bookworm based GoLang image is chosen over "docker.io/goreleaser/goreleaser" Alpine based
 # goreleaser official image (https://hub.docker.com/r/goreleaser/goreleaser),
 # because debian uses glibc and Alpine uses libc musl.
 ARG BUILDER_IMAGE_REGISTRY=docker.io/library
 ARG BUILDER_IMAGE_NAME=golang
-ARG BUILDER_IMAGE_TAG=${GOLANG_VERSION}-bookworm
+ARG BUILDER_IMAGE_TAG=${GOLANG_VERSION}-${DEBIAN_VERSION}
 
 # For OCI labels
 ARG BASE_REGISTRY=${BUILDER_IMAGE_REGISTRY}
