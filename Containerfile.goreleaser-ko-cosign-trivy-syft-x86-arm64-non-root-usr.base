@@ -137,16 +137,16 @@ ENTRYPOINT ["/bin/bash"]
 # See https://github.com/opencontainers/image-spec/blob/main/annotations.md
 ARG LABEL_CREATED=""
 ARG LABEL_AUTHOR="Thales Open Source <oss@thalesgroup.com>"
-ARG LABEL_URL="ghcr.io/thalesgroup/goreleaser-glibc-image"
+ARG LABEL_URL="ghcr.io/thalesgroup/goreleaser-glibc-image-base"
 ARG LABEL_DOCUMENTATION="https://github.com/ThalesGroup/goreleaser-glibc-image"
 ARG LABEL_SOURCE="https://github.com/ThalesGroup/goreleaser-glibc-image"
 ARG LABEL_VERSION=""
 ARG LABEL_REVISION=""
 ARG LABEL_VENDOR="Thales"
 ARG LABEL_LICENSES="Apache 2.0"
-ARG LABEL_TITLE="goreleaser-glibc-image"
+ARG LABEL_TITLE="goreleaser-glibc-image-base"
 ARG LABEL_REF_NAME=""
-ARG LABEL_DESCRIPTION="Container image that is shiped with goreleaser cosign ko-build trivy and syft, and using glibc on debian. Usage: $ podman run -it --rm -v $PWD:/pwd --workdir /pwd -e LDFLAGS ghcr.io/thalesgroup/goreleaser-glibc-image:latest build --clean --skip validate"
+ARG LABEL_DESCRIPTION="Container base image that is shiped with goreleaser cosign ko-build trivy and syft, and using glibc on debian. Usage: $ podman run -it --rm -v $PWD:/pwd --workdir /pwd -e LDFLAGS ghcr.io/thalesgroup/goreleaser-glibc-image:latest build --clean --skip validate"
 ARG LABEL_BASE_DIGEST=""
 ARG BASE_REGISTRY
 ARG BASE_IMAGE
