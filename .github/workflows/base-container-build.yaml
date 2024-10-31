@@ -34,9 +34,9 @@ jobs:
         run: |
           # Extract values from the Containerfile
           GOLANG_VERSION=$(grep -m1 'ARG GOLANG_VERSION=' $CONTAINERFILE_NAME | cut -d'=' -f2)
-          echo "GOLANG_VERSION=${GOLANG_VERSION}" >> $GITHUB_ENV
+          echo "GOLANG_VERSION=${GOLANG_VERSION}" >> $GITHUB_OUTPUT
           GORELEASER_VERSION=$(grep -m1 'ARG GORELEASER_VERSION=' $CONTAINERFILE_NAME | cut -d'=' -f2)
-          echo "GORELEASER_VERSION=${GORELEASER_VERSION}" >> $GITHUB_ENV
+          echo "GORELEASER_VERSION=${GORELEASER_VERSION}" >> $GITHUB_OUTPUT
 
       - name: Container metadata and tags
         uses: docker/metadata-action@v5
