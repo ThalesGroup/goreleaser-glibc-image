@@ -17,41 +17,44 @@ on:
 # Global KANIKO Variables:
 # See: https://github.com/int128/kaniko-action
 #  - KANIKO_BUILD_CONTEXT is the path to the location of the Containerfile.
-#  - CONTAINERFILE_NAME is name and location of the Containerfile.
+#  - BASE_CONTAINERFILE_NAME is name and location of the Containerfile for base image with a /bin/bash entrypoint.
+#  - GOREL_ENTRYP_CONTAINERFILE_NAME is name and location of the Containerfile form image with ENTRYPOINT [ "/go/bin/goreleaser" ]
 env:
     KANIKO_BUILD_CONTEXT: "${{ github.workspace }}"
-    CONTAINERFILE_NAME: "${{ github.workspace }}/Containerfile.goreleaser-ko-cosign-trivy-syft-x86-arm64-root-usr.base"
+    BASE_CONTAINERFILE_NAME: "${{ github.workspace }}/Containerfile.goreleaser-ko-cosign-trivy-syft-x86-arm64-root-usr.base"
+    GOREL_ENTRYP_CONTAINERFILE_NAME: "${{ github.workspace }}/Containerfile.goreleaser-ko-cosign-trivy-syft-x86-arm64-root-usr"
 
 jobs:
-  build:
+  # goreleaser-glibc-image-base has a /bin/bash entrypoint
+  build-base-image:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout source code
         uses: actions/checkout@v4
 
-      - name: Extract Tools Versions from Containerfile
+      - name: Extract Tools Versions from Containerfile as we use this in tags names
         id: extract
         run: |
           # Extract values from the Containerfile
-          GOLANG_VERSION=$(grep -m1 'ARG GOLANG_VERSION=' $CONTAINERFILE_NAME | cut -d'=' -f2)
+          GOLANG_VERSION=$(grep -m1 'ARG GOLANG_VERSION=' $BASE_CONTAINERFILE_NAME | cut -d'=' -f2)
           echo "GOLANG_VERSION=${GOLANG_VERSION}" >> $GITHUB_OUTPUT
 
-          GORELEASER_VERSION=$(grep -m1 'ARG GORELEASER_VERSION=' $CONTAINERFILE_NAME | cut -d'=' -f2)
+          GORELEASER_VERSION=$(grep -m1 'ARG GORELEASER_VERSION=' $BASE_CONTAINERFILE_NAME | cut -d'=' -f2)
           echo "GORELEASER_VERSION=${GORELEASER_VERSION}" >> $GITHUB_OUTPUT
           
-          TRIVY_VERSION=$(grep -m1 'ARG TRIVY_VERSION=' $CONTAINERFILE_NAME | cut -d'=' -f2)
+          TRIVY_VERSION=$(grep -m1 'ARG TRIVY_VERSION=' $BASE_CONTAINERFILE_NAME | cut -d'=' -f2)
           echo "TRIVY_VERSION=${TRIVY_VERSION}" >> $GITHUB_OUTPUT
           
-          COSIGN_VERSION=$(grep -m1 'ARG COSIGN_VERSION=' $CONTAINERFILE_NAME | cut -d'=' -f2)
+          COSIGN_VERSION=$(grep -m1 'ARG COSIGN_VERSION=' $BASE_CONTAINERFILE_NAME | cut -d'=' -f2)
           echo "COSIGN_VERSION=${COSIGN_VERSION}" >> $GITHUB_OUTPUT
           
-          KO_VERSION=$(grep -m1 'ARG KO_VERSION=' $CONTAINERFILE_NAME | cut -d'=' -f2)
+          KO_VERSION=$(grep -m1 'ARG KO_VERSION=' $BASE_CONTAINERFILE_NAME | cut -d'=' -f2)
           echo "KO_VERSION=${KO_VERSION}" >> $GITHUB_OUTPUT
           
-          SYFT_VERSION=$(grep -m1 'ARG SYFT_VERSION=' $CONTAINERFILE_NAME | cut -d'=' -f2)
+          SYFT_VERSION=$(grep -m1 'ARG SYFT_VERSION=' $BASE_CONTAINERFILE_NAME | cut -d'=' -f2)
           echo "SYFT_VERSION=${SYFT_VERSION}" >> $GITHUB_OUTPUT
 
-          DEBIAN_VERSION=$(grep -m1 'ARG DEBIAN_VERSION=' $CONTAINERFILE_NAME | cut -d'=' -f2)
+          DEBIAN_VERSION=$(grep -m1 'ARG DEBIAN_VERSION=' $BASE_CONTAINERFILE_NAME | cut -d'=' -f2)
           echo "DEBIAN_VERSION=${DEBIAN_VERSION}" >> $GITHUB_OUTPUT
 
       - name: Container metadata and tags
@@ -94,6 +97,81 @@ jobs:
           labels: ${{ steps.metadata.outputs.labels }}
           cache: true
           cache-repository: ghcr.io/${{ github.repository }}/cache
-          file: ${{ env.CONTAINERFILE_NAME }}
+          file: ${{ env.BASE_CONTAINERFILE_NAME }}
+          context: ${{ env.KANIKO_BUILD_CONTEXT }}
+          verbosity: "info"  # https://github.com/GoogleContainerTools/kaniko#flag---verbosity
+
+
+  # goreleaser-glibc has a goreleaser entrypoint
+  build-goreleaser-entryp-image:
+    needs: build-base-image  # Ensure this job runs after build-base-image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Extract Tools Versions from Containerfile as we use this in tags names
+        id: extract
+        run: |
+          # Extract values from the Containerfile
+          GOLANG_VERSION=$(grep -m1 'ARG GOLANG_VERSION=' $GOREL_ENTRYP_CONTAINERFILE_NAME | cut -d'=' -f2)
+          echo "GOLANG_VERSION=${GOLANG_VERSION}" >> $GITHUB_OUTPUT
+
+          GORELEASER_VERSION=$(grep -m1 'ARG GORELEASER_VERSION=' $GOREL_ENTRYP_CONTAINERFILE_NAME | cut -d'=' -f2)
+          echo "GORELEASER_VERSION=${GORELEASER_VERSION}" >> $GITHUB_OUTPUT
+          
+          TRIVY_VERSION=$(grep -m1 'ARG TRIVY_VERSION=' $GOREL_ENTRYP_CONTAINERFILE_NAME | cut -d'=' -f2)
+          echo "TRIVY_VERSION=${TRIVY_VERSION}" >> $GITHUB_OUTPUT
+          
+          COSIGN_VERSION=$(grep -m1 'ARG COSIGN_VERSION=' $GOREL_ENTRYP_CONTAINERFILE_NAME | cut -d'=' -f2)
+          echo "COSIGN_VERSION=${COSIGN_VERSION}" >> $GITHUB_OUTPUT
+          
+          KO_VERSION=$(grep -m1 'ARG KO_VERSION=' $GOREL_ENTRYP_CONTAINERFILE_NAME | cut -d'=' -f2)
+          echo "KO_VERSION=${KO_VERSION}" >> $GITHUB_OUTPUT
+          
+          SYFT_VERSION=$(grep -m1 'ARG SYFT_VERSION=' $GOREL_ENTRYP_CONTAINERFILE_NAME | cut -d'=' -f2)
+          echo "SYFT_VERSION=${SYFT_VERSION}" >> $GITHUB_OUTPUT
+
+          DEBIAN_VERSION=$(grep -m1 'ARG DEBIAN_VERSION=' $GOREL_ENTRYP_CONTAINERFILE_NAME | cut -d'=' -f2)
+          echo "DEBIAN_VERSION=${DEBIAN_VERSION}" >> $GITHUB_OUTPUT
+
+      - name: Container metadata and tags
+        uses: docker/metadata-action@v5
+        id: metadata
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=ref,event=branch
+            # use tools version as tags
+            type=raw,value=golang-${{ steps.extract.outputs.golang_version }}
+            type=raw,value=goreleaser-${{ steps.extract.outputs.goreleaser_version }}
+            type=raw,value=cosign-${{ steps.extract.outputs.cosign_version }}
+            type=raw,value=ko-${{ steps.extract.outputs.ko_version }}
+            type=raw,value=trivy-${{ steps.extract.outputs.trivy_version }}
+            type=raw,value=syft-${{ steps.extract.outputs.syft_version }}
+
+            type=raw,value=golang-${{ steps.extract.outputs.golang_version }}-${{ steps.extract.outputs.debian_version}}
+            type=raw,value=goreleaser-${{ steps.extract.outputs.goreleaser_version }}-${{ steps.extract.outputs.debian_version}}
+            type=raw,value=cosign-${{ steps.extract.outputs.cosign_version }}-${{ steps.extract.outputs.debian_version}}
+            type=raw,value=ko-${{ steps.extract.outputs.ko_version }}-${{ steps.extract.outputs.debian_version}}
+            type=raw,value=trivy-${{ steps.extract.outputs.trivy_version }}-${{ steps.extract.outputs.debian_version}}
+            type=raw,value=syft-${{ steps.extract.outputs.syft_version }}-${{ steps.extract.outputs.debian_version}}
+
+            # minimal (short sha)
+            type=sha
+            # full length sha
+            type=sha,format=long
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: int128/kaniko-action@v1
+        with:
+          push: true
+          tags: ${{ steps.metadata.outputs.tags }}
+          labels: ${{ steps.metadata.outputs.labels }}
+          cache: true
+          cache-repository: ghcr.io/${{ github.repository }}/cache
+          file: ${{ env.GOREL_ENTRYP_CONTAINERFILE_NAME }}
           context: ${{ env.KANIKO_BUILD_CONTEXT }}
           verbosity: "info"  # https://github.com/GoogleContainerTools/kaniko#flag---verbosity
