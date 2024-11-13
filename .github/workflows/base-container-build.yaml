@@ -41,16 +41,16 @@ jobs:
 
           GORELEASER_VERSION=$(grep -m1 'ARG GORELEASER_VERSION=' $BASE_CONTAINERFILE_NAME | cut -d'=' -f2)
           echo "GORELEASER_VERSION=${GORELEASER_VERSION}" >> $GITHUB_OUTPUT
-          
+
           TRIVY_VERSION=$(grep -m1 'ARG TRIVY_VERSION=' $BASE_CONTAINERFILE_NAME | cut -d'=' -f2)
           echo "TRIVY_VERSION=${TRIVY_VERSION}" >> $GITHUB_OUTPUT
-          
+
           COSIGN_VERSION=$(grep -m1 'ARG COSIGN_VERSION=' $BASE_CONTAINERFILE_NAME | cut -d'=' -f2)
           echo "COSIGN_VERSION=${COSIGN_VERSION}" >> $GITHUB_OUTPUT
-          
+
           KO_VERSION=$(grep -m1 'ARG KO_VERSION=' $BASE_CONTAINERFILE_NAME | cut -d'=' -f2)
           echo "KO_VERSION=${KO_VERSION}" >> $GITHUB_OUTPUT
-          
+
           SYFT_VERSION=$(grep -m1 'ARG SYFT_VERSION=' $BASE_CONTAINERFILE_NAME | cut -d'=' -f2)
           echo "SYFT_VERSION=${SYFT_VERSION}" >> $GITHUB_OUTPUT
 
@@ -107,6 +107,9 @@ jobs:
     needs: build-base-image  # Ensure this job runs after build-base-image
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
       - name: Extract Tools Versions from Containerfile as we use this in tags names
         id: extract
         run: |
@@ -116,16 +119,16 @@ jobs:
 
           GORELEASER_VERSION=$(grep -m1 'ARG GORELEASER_VERSION=' $GOREL_ENTRYP_CONTAINERFILE_NAME | cut -d'=' -f2)
           echo "GORELEASER_VERSION=${GORELEASER_VERSION}" >> $GITHUB_OUTPUT
-          
+
           TRIVY_VERSION=$(grep -m1 'ARG TRIVY_VERSION=' $GOREL_ENTRYP_CONTAINERFILE_NAME | cut -d'=' -f2)
           echo "TRIVY_VERSION=${TRIVY_VERSION}" >> $GITHUB_OUTPUT
-          
+
           COSIGN_VERSION=$(grep -m1 'ARG COSIGN_VERSION=' $GOREL_ENTRYP_CONTAINERFILE_NAME | cut -d'=' -f2)
           echo "COSIGN_VERSION=${COSIGN_VERSION}" >> $GITHUB_OUTPUT
-          
+
           KO_VERSION=$(grep -m1 'ARG KO_VERSION=' $GOREL_ENTRYP_CONTAINERFILE_NAME | cut -d'=' -f2)
           echo "KO_VERSION=${KO_VERSION}" >> $GITHUB_OUTPUT
-          
+
           SYFT_VERSION=$(grep -m1 'ARG SYFT_VERSION=' $GOREL_ENTRYP_CONTAINERFILE_NAME | cut -d'=' -f2)
           echo "SYFT_VERSION=${SYFT_VERSION}" >> $GITHUB_OUTPUT
 
