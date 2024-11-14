@@ -25,7 +25,7 @@ env:
     GOREL_ENTRYP_CONTAINERFILE_NAME: "${{ github.workspace }}/Containerfile.goreleaser-ko-cosign-trivy-syft-x86-arm64-root-usr"
 
 jobs:
-  # goreleaser-glibc-image-base has a /bin/bash entrypoint
+  # Kaniko job to build a container image "goreleaser-glibc-image-base" has a /bin/bash entrypoint
   build-base-image:
     runs-on: ubuntu-latest
     steps:
@@ -90,7 +90,9 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - uses: int128/kaniko-action@v1
+      - name: Build the OCI image (base image entrytoint /bin/bash)
+        id: kaniko
+        uses: int128/kaniko-action@v1
         with:
           push: true
           tags: ${{ steps.metadata.outputs.tags }}
@@ -100,9 +102,27 @@ jobs:
           file: ${{ env.BASE_CONTAINERFILE_NAME }}
           context: ${{ env.KANIKO_BUILD_CONTEXT }}
           verbosity: "info"  # https://github.com/GoogleContainerTools/kaniko#flag---verbosity
+    
+    outputs:
+      oci-image-digest: ${{ steps.kaniko.outputs.digest }}
 
+  base-image-provenance:
+    name: Generate SLSA provenance attestation for OCI
+    needs: build-base-image  # Ensure this job runs after build-base-image
+    permissions:
+      actions: read # for detecting the Github Actions environment.
+      id-token: write # for creating OIDC tokens for signing. Required for SLSA and Cosign
+      packages: write # for uploading attestations. (https://github.com/slsa-framework/slsa-github-generator/blob/main/internal/builders/container/README.md#known-issues)
+      # Must be referenced by a tag. https://github.com/slsa-framework/slsa-github-generator/blob/main/internal/builders/container/README.md#referencing-the-slsa-generator
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v2
+    with:
+      image: ghcr.io/${{ github.repository }}-base
+      digest: ${{ needs.build-base-image.outputs.oci-image-digest }}
+    secrets:
+      registry-username: ${{ github.actor }}
+      registry-password: ${{ secrets.GITHUB_TOKEN }}
 
-  # goreleaser-glibc has a goreleaser entrypoint
+  # Kaniko job to build a container image "goreleaser-glibc-image" that has a goreleaser entrypoint
   build-goreleaser-entryp-image:
     needs: build-base-image  # Ensure this job runs after build-base-image
     runs-on: ubuntu-latest
@@ -168,7 +188,8 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - uses: int128/kaniko-action@v1
+      - name: Build the OCI image
+        uses: int128/kaniko-action@v1
         with:
           push: true
           tags: ${{ steps.metadata.outputs.tags }}
