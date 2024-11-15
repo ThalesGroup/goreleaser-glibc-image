@@ -134,7 +134,7 @@ jobs:
   # Job to build a SLSA provenance attestation
   base-image-provenance:
     name: Generate SLSA provenance attestation for OCI
-    needs: build-base-image  # Ensure this job runs after build-base-image
+    needs: [build-base-image, set-lowercase-repository]  # Ensure this job runs after build-base-image
     permissions:
       actions: read # for detecting the Github Actions environment.
       id-token: write # for creating OIDC tokens for signing. Required for SLSA and Cosign
@@ -150,7 +150,7 @@ jobs:
 
   # Kaniko job to build a container image "goreleaser-glibc-image" that has a goreleaser entrypoint
   build-goreleaser-entryp-image:
-    needs: build-base-image  # Ensure this job runs after build-base-image
+    needs: [build-base-image, set-lowercase-repository]  # Ensure this job runs after build-base-image
     runs-on: ubuntu-latest
     steps:
       - name: Checkout source code
@@ -235,7 +235,7 @@ jobs:
 
   goreleaser-entryp-image-provenance:
     name: Generate SLSA provenance attestation for OCI
-    needs: build-goreleaser-entryp-image  # Ensure this job runs after build-base-image
+    needs: [build-goreleaser-entryp-image, set-lowercase-repository]  # Ensure this job runs after build-base-image
     permissions:
       actions: read # for detecting the Github Actions environment.
       id-token: write # for creating OIDC tokens for signing. Required for SLSA and Cosign
