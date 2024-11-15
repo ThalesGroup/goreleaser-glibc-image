@@ -35,7 +35,8 @@ jobs:
       - name: Convert repository name to lowercase
         id: convert
         run: |
-          echo "::set-output name=lowercase::$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')"
+          echo "lowercase=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+        shell: bash
 
   use-lowercase-repo:
     needs: set-lowercase-repository
