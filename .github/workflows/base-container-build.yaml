@@ -24,10 +24,31 @@ env:
     KANIKO_BUILD_CONTEXT: "${{ github.workspace }}"
     BASE_CONTAINERFILE_NAME: "${{ github.workspace }}/Containerfile.goreleaser-ko-cosign-trivy-syft-x86-arm64-root-usr.base"
     GOREL_ENTRYP_CONTAINERFILE_NAME: "${{ github.workspace }}/Containerfile.goreleaser-ko-cosign-trivy-syft-x86-arm64-root-usr"
+    OCI_REGISTRY: "ghcr.io"
 
 jobs:
+  set-lowercase-repository:
+    runs-on: ubuntu-latest
+    outputs:
+      lowercase-github-repository: ${{ steps.convert.outputs.lowercase }}
+    steps:
+      - name: Convert repository name to lowercase
+        id: convert
+        run: |
+          echo "::set-output name=lowercase::$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')"
+
+  use-lowercase-repo:
+    needs: set-lowercase-repository
+    runs-on: ubuntu-latest
+    steps:
+      - name: Access lowercase repository name
+        run: |
+          echo "Original Repository: ${{ github.repository }}"
+          echo "Lowercase Repository: ${{ needs.set-lowercase-repository.outputs.lowercase-github-repository }}"
+
   # Kaniko job to build a container image "goreleaser-glibc-image-base" has a /bin/bash entrypoint
   build-base-image:
+    needs: set-lowercase-repository
     runs-on: ubuntu-latest
     steps:
       - name: Checkout source code
@@ -58,11 +79,19 @@ jobs:
           DEBIAN_VERSION=$(grep -m1 'ARG DEBIAN_VERSION=' $BASE_CONTAINERFILE_NAME | cut -d'=' -f2)
           echo "DEBIAN_VERSION=${DEBIAN_VERSION}" >> $GITHUB_OUTPUT
 
-      - name: Container metadata and tags
-        uses: docker/metadata-action@v5
-        id: metadata
+      - uses: docker/login-action@v3
+        id: login
         with:
-          images: ghcr.io/${{ github.repository }}-base
+          registry: ${{ env.OCI_REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Container metadata and tags
+        id: metadata
+        uses: docker/metadata-action@v5
+        with:
+          # image name may contain lowercase letters, digits and separators https://github.com/docker/metadata-action/tree/v5/?tab=readme-ov-file#image-name-and-tag-sanitization
+          images: ${{ steps.login.outputs.registry }}/${{ needs.set-lowercase-repository.outputs.lowercase-github-repository }}-base
           tags: |
             type=ref,event=branch
             # use tools version as tags
@@ -85,12 +114,6 @@ jobs:
             # full length sha
             type=sha,format=long
 
-      - uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Build the OCI image (base image entrytoint /bin/bash)
         id: kaniko
         uses: int128/kaniko-action@v1
@@ -99,13 +122,14 @@ jobs:
           tags: ${{ steps.metadata.outputs.tags }}
           labels: ${{ steps.metadata.outputs.labels }}
           cache: true
-          cache-repository: ghcr.io/${{ github.repository }}/cache
+          cache-repository: ${{ steps.login.outputs.registry }}/${{ needs.set-lowercase-repository.outputs.lowercase-github-repository }}/cache
           file: ${{ env.BASE_CONTAINERFILE_NAME }}
           context: ${{ env.KANIKO_BUILD_CONTEXT }}
           verbosity: "info"  # https://github.com/GoogleContainerTools/kaniko#flag---verbosity
-    
+
     outputs:
       oci-image-digest: ${{ steps.kaniko.outputs.digest }}
+      oci-image-url: ${{ steps.metadata.outputs.images }} # needs to be lowercase
 
   # Job to build a SLSA provenance attestation
   base-image-provenance:
@@ -118,7 +142,7 @@ jobs:
       # Must be referenced by a tag. https://github.com/slsa-framework/slsa-github-generator/blob/main/internal/builders/container/README.md#referencing-the-slsa-generator
     uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v2.0.0
     with:
-      image: ghcr.io/${{ github.repository }}-base
+      image: ${{ needs.build-base-image.outputs.oci-image-url }} # needs to be lowercase
       digest: ${{ needs.build-base-image.outputs.oci-image-digest }}
     secrets:
       registry-username: ${{ github.actor }}
@@ -157,11 +181,19 @@ jobs:
           DEBIAN_VERSION=$(grep -m1 'ARG DEBIAN_VERSION=' $GOREL_ENTRYP_CONTAINERFILE_NAME | cut -d'=' -f2)
           echo "DEBIAN_VERSION=${DEBIAN_VERSION}" >> $GITHUB_OUTPUT
 
-      - name: Container metadata and tags
-        uses: docker/metadata-action@v5
-        id: metadata
+      - uses: docker/login-action@v3
+        id: login
         with:
-          images: ghcr.io/${{ github.repository }}
+          registry: ${{ env.OCI_REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Container metadata and tags
+        id: metadata
+        uses: docker/metadata-action@v5
+        with:
+          # image name may contain lowercase letters, digits and separators https://github.com/docker/metadata-action/tree/v5/?tab=readme-ov-file#image-name-and-tag-sanitization
+          images: ${{ steps.login.outputs.registry }}/${{ needs.set-lowercase-repository.outputs.lowercase-github-repository }}
           tags: |
             type=ref,event=branch
             # use tools version as tags
@@ -184,27 +216,22 @@ jobs:
             # full length sha
             type=sha,format=long
 
-      - uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Build the OCI image
-        uses: int128/kaniko-action@v1
         id: kaniko
+        uses: int128/kaniko-action@v1
         with:
           push: true
           tags: ${{ steps.metadata.outputs.tags }}
           labels: ${{ steps.metadata.outputs.labels }}
           cache: true
-          cache-repository: ghcr.io/${{ github.repository }}/cache
+          cache-repository: ${{ steps.login.outputs.registry }}/${{ needs.set-lowercase-repository.outputs.lowercase-github-repository }}/cache
           file: ${{ env.GOREL_ENTRYP_CONTAINERFILE_NAME }}
           context: ${{ env.KANIKO_BUILD_CONTEXT }}
           verbosity: "info"  # https://github.com/GoogleContainerTools/kaniko#flag---verbosity
 
     outputs:
       oci-image-digest: ${{ steps.kaniko.outputs.digest }}
+      oci-image-url: ${{ steps.metadata.outputs.images }} # needs to be lowercase
 
   goreleaser-entryp-image-provenance:
     name: Generate SLSA provenance attestation for OCI
@@ -216,8 +243,8 @@ jobs:
       # Must be referenced by a tag. https://github.com/slsa-framework/slsa-github-generator/blob/main/internal/builders/container/README.md#referencing-the-slsa-generator
     uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v2.0.0
     with:
-      image: ghcr.io/${{ github.repository }}
+      image: ${{ needs.build-goreleaser-entryp-image.outputs.oci-image-url }} # needs to be lowercase
       digest: ${{ needs.build-goreleaser-entryp-image.outputs.oci-image-digest }}
     secrets:
       registry-username: ${{ github.actor }}
-      registry-password: ${{ secrets.GITHUB_TOKEN }}          
+      registry-password: ${{ secrets.GITHUB_TOKEN }}
