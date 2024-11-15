@@ -32,7 +32,7 @@ jobs:
     outputs:
       lowercase-github-repository: ${{ steps.convert.outputs.lowercase }}
     steps:
-      - name: Convert repository name to lowercase
+      - name: Convert GitHub repository name to lowercase for OCI registry
         id: convert
         run: |
           echo "lowercase=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
@@ -42,7 +42,7 @@ jobs:
     needs: set-lowercase-repository
     runs-on: ubuntu-latest
     steps:
-      - name: Access lowercase repository name
+      - name: Access lowercase GitHub repository name
         run: |
           echo "Original Repository: ${{ github.repository }}"
           echo "Lowercase Repository: ${{ needs.set-lowercase-repository.outputs.lowercase-github-repository }}"
@@ -87,12 +87,16 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Set OCI container image URL to Github output
+        id: set-oci-image-url
+        run: echo "OCI_IMAGE_URL=${{ env.OCI_REGISTRY }}/${{ needs.set-lowercase-repository.outputs.lowercase-github-repository }}-base" >> $GITHUB_OUTPUT
+
       - name: Container metadata and tags
         id: metadata
         uses: docker/metadata-action@v5
         with:
           # image name may contain lowercase letters, digits and separators https://github.com/docker/metadata-action/tree/v5/?tab=readme-ov-file#image-name-and-tag-sanitization
-          images: ${{ env.OCI_REGISTRY }}/${{ needs.set-lowercase-repository.outputs.lowercase-github-repository }}-base
+          images: ${{ steps.set-oci-image-url.outputs.oci_image_url }}
           tags: |
             type=ref,event=branch
             # use tools version as tags
@@ -115,7 +119,7 @@ jobs:
             # full length sha
             type=sha,format=long
 
-      - name: Build the OCI image (base image entrytoint /bin/bash)
+      - name: Build the OCI image (base image entrypoint /bin/bash)
         id: kaniko
         uses: int128/kaniko-action@v1
         with:
@@ -130,11 +134,11 @@ jobs:
 
     outputs:
       oci-image-digest: ${{ steps.kaniko.outputs.digest }}
-      oci-image-url: ${{ steps.metadata.outputs.images }} # needs to be lowercase
+      oci-image-url: ${{ steps.set-oci-image-url.outputs.oci_image_url }} # needs to be lowercase
 
   # Job to build a SLSA provenance attestation
   base-image-provenance:
-    name: Generate SLSA provenance attestation for OCI
+    name: Generate SLSA provenance attestation for OCI (base image entrypoint /bin/bash)
     needs: [build-base-image, set-lowercase-repository]  # Ensure this job runs after build-base-image
     permissions:
       actions: read # for detecting the Github Actions environment.
@@ -189,12 +193,16 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Set OCI container image URL to Github output
+        id: set-oci-image-url
+        run: echo "OCI_IMAGE_URL=${{ env.OCI_REGISTRY }}/${{ needs.set-lowercase-repository.outputs.lowercase-github-repository }}" >> $GITHUB_OUTPUT
+
       - name: Container metadata and tags
         id: metadata
         uses: docker/metadata-action@v5
         with:
           # image name may contain lowercase letters, digits and separators https://github.com/docker/metadata-action/tree/v5/?tab=readme-ov-file#image-name-and-tag-sanitization
-          images: ${{ env.OCI_REGISTRY }}/${{ needs.set-lowercase-repository.outputs.lowercase-github-repository }}
+          images: ${{ steps.set-oci-image-url.outputs.oci_image_url }}
           tags: |
             type=ref,event=branch
             # use tools version as tags
@@ -232,11 +240,11 @@ jobs:
 
     outputs:
       oci-image-digest: ${{ steps.kaniko.outputs.digest }}
-      oci-image-url: ${{ steps.metadata.outputs.images }} # needs to be lowercase
+      oci-image-url: ${{ steps.set-oci-image-url.outputs.oci_image_url }} # needs to be lowercase
 
   goreleaser-entryp-image-provenance:
-    name: Generate SLSA provenance attestation for OCI
-    needs: [build-goreleaser-entryp-image, set-lowercase-repository]  # Ensure this job runs after build-base-image
+    name: Generate SLSA provenance attestation for OCI (entrypoint goreleaser)
+    needs: [build-goreleaser-entryp-image]  # Ensure this job runs after build-base-image
     permissions:
       actions: read # for detecting the Github Actions environment.
       id-token: write # for creating OIDC tokens for signing. Required for SLSA and Cosign
