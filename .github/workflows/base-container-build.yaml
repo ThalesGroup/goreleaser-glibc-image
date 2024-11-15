@@ -24,7 +24,7 @@ env:
     KANIKO_BUILD_CONTEXT: "${{ github.workspace }}"
     BASE_CONTAINERFILE_NAME: "${{ github.workspace }}/Containerfile.goreleaser-ko-cosign-trivy-syft-x86-arm64-root-usr.base"
     GOREL_ENTRYP_CONTAINERFILE_NAME: "${{ github.workspace }}/Containerfile.goreleaser-ko-cosign-trivy-syft-x86-arm64-root-usr"
-    OCI_REGISTRY: "ghcr.io"
+    OCI_REGISTRY: "ghcr.io" # must be lowercase
 
 jobs:
   set-lowercase-repository:
@@ -38,7 +38,7 @@ jobs:
           echo "lowercase=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
         shell: bash
 
-  use-lowercase-repo:
+  show-lowercase-repository:
     needs: set-lowercase-repository
     runs-on: ubuntu-latest
     steps:
@@ -92,7 +92,7 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           # image name may contain lowercase letters, digits and separators https://github.com/docker/metadata-action/tree/v5/?tab=readme-ov-file#image-name-and-tag-sanitization
-          images: ${{ steps.login.outputs.registry }}/${{ needs.set-lowercase-repository.outputs.lowercase-github-repository }}-base
+          images: ${{ env.OCI_REGISTRY }}/${{ needs.set-lowercase-repository.outputs.lowercase-github-repository }}-base
           tags: |
             type=ref,event=branch
             # use tools version as tags
@@ -123,7 +123,7 @@ jobs:
           tags: ${{ steps.metadata.outputs.tags }}
           labels: ${{ steps.metadata.outputs.labels }}
           cache: true
-          cache-repository: ${{ steps.login.outputs.registry }}/${{ needs.set-lowercase-repository.outputs.lowercase-github-repository }}/cache
+          cache-repository: ${{ env.OCI_REGISTRY }}/${{ needs.set-lowercase-repository.outputs.lowercase-github-repository }}/cache
           file: ${{ env.BASE_CONTAINERFILE_NAME }}
           context: ${{ env.KANIKO_BUILD_CONTEXT }}
           verbosity: "info"  # https://github.com/GoogleContainerTools/kaniko#flag---verbosity
@@ -194,7 +194,7 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           # image name may contain lowercase letters, digits and separators https://github.com/docker/metadata-action/tree/v5/?tab=readme-ov-file#image-name-and-tag-sanitization
-          images: ${{ steps.login.outputs.registry }}/${{ needs.set-lowercase-repository.outputs.lowercase-github-repository }}
+          images: ${{ env.OCI_REGISTRY }}/${{ needs.set-lowercase-repository.outputs.lowercase-github-repository }}
           tags: |
             type=ref,event=branch
             # use tools version as tags
@@ -225,7 +225,7 @@ jobs:
           tags: ${{ steps.metadata.outputs.tags }}
           labels: ${{ steps.metadata.outputs.labels }}
           cache: true
-          cache-repository: ${{ steps.login.outputs.registry }}/${{ needs.set-lowercase-repository.outputs.lowercase-github-repository }}/cache
+          cache-repository: ${{ env.OCI_REGISTRY }}/${{ needs.set-lowercase-repository.outputs.lowercase-github-repository }}/cache
           file: ${{ env.GOREL_ENTRYP_CONTAINERFILE_NAME }}
           context: ${{ env.KANIKO_BUILD_CONTEXT }}
           verbosity: "info"  # https://github.com/GoogleContainerTools/kaniko#flag---verbosity
