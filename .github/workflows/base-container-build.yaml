@@ -1,7 +1,4 @@
-# Using Kaniko: refer to the following documentations:
-# * https://github.com/marketplace/actions/kaniko-action
-# * https://github.com/int128/kaniko-action#inputs
-
+# Github Actions workflow
 name: "Build a container that ship with goreleaser, cosign, ko-build, trivy, syft and push to GitHub Container Registry (GHCR)"
 
 on:
@@ -15,18 +12,19 @@ on:
         - containerfiles # TODO: remove after testing
         - cosign-slsa # TODO: remove after testing
 
-# Global KANIKO Variables:
-# See: https://github.com/int128/kaniko-action
-#  - KANIKO_BUILD_CONTEXT is the path to the location of the Containerfile.
-#  - BASE_CONTAINERFILE_NAME is name and location of the Containerfile for base image with a /bin/bash entrypoint.
-#  - GOREL_ENTRYP_CONTAINERFILE_NAME is name and location of the Containerfile form image with ENTRYPOINT [ "/go/bin/goreleaser" ]
 env:
-    KANIKO_BUILD_CONTEXT: "${{ github.workspace }}"
     BASE_CONTAINERFILE_NAME: "${{ github.workspace }}/Containerfile.goreleaser-ko-cosign-trivy-syft-x86-arm64-root-usr.base"
     GOREL_ENTRYP_CONTAINERFILE_NAME: "${{ github.workspace }}/Containerfile.goreleaser-ko-cosign-trivy-syft-x86-arm64-root-usr"
     OCI_REGISTRY: "ghcr.io" # must be lowercase
 
+# This workflow uses Podman and Buildah github actions to login, build and push container images:
+#   * https://github.com/redhat-actions/podman-login
+#   * https://github.com/redhat-actions/buildah-build
+#   * https://github.com/redhat-actions/push-to-registry
 jobs:
+  # Some tools like the ghcr.io registry are case sensitive.
+  # Since the "github.com/ThalesGroup" organisation has Uppercase letters, we need to convert the repository name to
+  # lowercase so it matches "ghcr.io/thalesgroup".
   set-lowercase-repository:
     runs-on: ubuntu-latest
     outputs:
@@ -42,12 +40,12 @@ jobs:
     needs: set-lowercase-repository
     runs-on: ubuntu-latest
     steps:
-      - name: Access lowercase GitHub repository name
+      - name: Show lowercase GitHub repository name in logs
         run: |
           echo "Original Repository: ${{ github.repository }}"
           echo "Lowercase Repository: ${{ needs.set-lowercase-repository.outputs.lowercase-github-repository }}"
 
-  # Kaniko job to build a container image "goreleaser-glibc-image-base" has a /bin/bash entrypoint
+  # job to build a container image "goreleaser-glibc-image-base" has a /bin/bash entrypoint
   build-base-image:
     needs: set-lowercase-repository
     runs-on: ubuntu-latest
@@ -80,7 +78,26 @@ jobs:
           DEBIAN_VERSION=$(grep -m1 'ARG DEBIAN_VERSION=' $BASE_CONTAINERFILE_NAME | cut -d'=' -f2)
           echo "DEBIAN_VERSION=${DEBIAN_VERSION}" >> $GITHUB_OUTPUT
 
-      - uses: docker/login-action@v3
+      - name: Prepare OCI tags list
+        id: prepare-oci-tags
+        run: |
+          echo "export IMAGE_TAGS=\"\
+          ${{ github.sha }} \
+          golang-${{ steps.extract.outputs.golang_version }} \
+          goreleaser-${{ steps.extract.outputs.goreleaser_version }} \
+          cosign-${{ steps.extract.outputs.cosign_version }} \
+          ko-${{ steps.extract.outputs.ko_version }} \
+          trivy-${{ steps.extract.outputs.trivy_version }} \
+          syft-${{ steps.extract.outputs.syft_version }} \
+          golang-${{ steps.extract.outputs.golang_version }}-${{ steps.extract.outputs.debian_version}} \
+          goreleaser-${{ steps.extract.outputs.goreleaser_version }}-${{ steps.extract.outputs.debian_version}} \
+          cosign-${{ steps.extract.outputs.cosign_version }}-${{ steps.extract.outputs.debian_version}} \
+          ko-${{ steps.extract.outputs.ko_version }}-${{ steps.extract.outputs.debian_version}} \
+          trivy-${{ steps.extract.outputs.trivy_version }}-${{ steps.extract.outputs.debian_version}} \
+          syft-${{ steps.extract.outputs.syft_version }}-${{ steps.extract.outputs.debian_version}}\"" >> $GITHUB_OUTPUT
+
+      - name: Login to OCI registry
+        uses: redhat-actions/podman-login@v1
         id: login
         with:
           registry: ${{ env.OCI_REGISTRY }}
@@ -91,49 +108,25 @@ jobs:
         id: set-oci-image-url
         run: echo "OCI_IMAGE_URL=${{ env.OCI_REGISTRY }}/${{ needs.set-lowercase-repository.outputs.lowercase-github-repository }}-base" >> $GITHUB_OUTPUT
 
-      - name: Container metadata and tags
-        id: metadata
-        uses: docker/metadata-action@v5
+      - name: Build the container image
+        id: buildah-build
+        uses: redhat-actions/buildah-build@v1
         with:
-          # image name may contain lowercase letters, digits and separators https://github.com/docker/metadata-action/tree/v5/?tab=readme-ov-file#image-name-and-tag-sanitization
-          images: ${{ steps.set-oci-image-url.outputs.oci_image_url }}
-          tags: |
-            type=ref,event=branch
-            # use tools version as tags
-            type=raw,value=golang-${{ steps.extract.outputs.golang_version }}
-            type=raw,value=goreleaser-${{ steps.extract.outputs.goreleaser_version }}
-            type=raw,value=cosign-${{ steps.extract.outputs.cosign_version }}
-            type=raw,value=ko-${{ steps.extract.outputs.ko_version }}
-            type=raw,value=trivy-${{ steps.extract.outputs.trivy_version }}
-            type=raw,value=syft-${{ steps.extract.outputs.syft_version }}
+          image-name: ${{ steps.set-oci-image-url.outputs.oci_image_url }}
+          containerfile: ${{ env.BASE_CONTAINERFILE_NAME }}
+          tags: ${{ steps.prepare-oci-tags.outputs.image_tags }}
 
-            type=raw,value=golang-${{ steps.extract.outputs.golang_version }}-${{ steps.extract.outputs.debian_version}}
-            type=raw,value=goreleaser-${{ steps.extract.outputs.goreleaser_version }}-${{ steps.extract.outputs.debian_version}}
-            type=raw,value=cosign-${{ steps.extract.outputs.cosign_version }}-${{ steps.extract.outputs.debian_version}}
-            type=raw,value=ko-${{ steps.extract.outputs.ko_version }}-${{ steps.extract.outputs.debian_version}}
-            type=raw,value=trivy-${{ steps.extract.outputs.trivy_version }}-${{ steps.extract.outputs.debian_version}}
-            type=raw,value=syft-${{ steps.extract.outputs.syft_version }}-${{ steps.extract.outputs.debian_version}}
-
-            # minimal (short sha)
-            type=sha
-            # full length sha
-            type=sha,format=long
-
-      - name: Build the OCI image (base image entrypoint /bin/bash)
-        id: kaniko
-        uses: int128/kaniko-action@v1
+      - name: Push image
+        uses: redhat-actions/push-to-registry@v1
         with:
-          push: true
-          tags: ${{ steps.metadata.outputs.tags }}
-          labels: ${{ steps.metadata.outputs.labels }}
-          cache: true
-          cache-repository: ${{ env.OCI_REGISTRY }}/${{ needs.set-lowercase-repository.outputs.lowercase-github-repository }}/cache
-          file: ${{ env.BASE_CONTAINERFILE_NAME }}
-          context: ${{ env.KANIKO_BUILD_CONTEXT }}
-          verbosity: "info"  # https://github.com/GoogleContainerTools/kaniko#flag---verbosity
+          image-name: ${{ steps.set-oci-image-url.outputs.oci_image_url }}
+          registry: ${{ env.OCI_REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
 
     outputs:
-      oci-image-digest: ${{ steps.kaniko.outputs.digest }}
+      oci-image-digest: ${{ steps.buildah-build.outputs.image-digest }}
       oci-image-url: ${{ steps.set-oci-image-url.outputs.oci_image_url }} # needs to be lowercase
 
   # Job to build a SLSA provenance attestation
