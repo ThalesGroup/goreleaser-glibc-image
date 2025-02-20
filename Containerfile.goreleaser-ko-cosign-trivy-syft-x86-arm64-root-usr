@@ -14,12 +14,12 @@
 
 # Set Go & tools versions. This needs to match the versions from the corresponding base image
 # ghcr.io/thalesgroup/goreleaser-glibc-image-base (the one with entrypoint /bin/bash)
-ARG GOLANG_VERSION=1.23.0
+ARG GOLANG_VERSION=1.23.6
 ARG TRIVY_VERSION=0.57.1
 ARG SYFT_VERSION=1.16.0
 ARG COSIGN_VERSION=2.4.1
 ARG KO_VERSION=0.17.1
-# goreleaser v2.4.7 ships with go1.23.0
+# goreleaser v2.4.7 ships with go1.23.6
 ARG GORELEASER_VERSION=2.4.7
 
 # Set Debian version name (e.g. bookworm)
