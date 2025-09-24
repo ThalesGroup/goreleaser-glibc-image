@@ -125,7 +125,7 @@ jobs:
           containerfiles: |
             ${{ env.BASE_CONTAINERFILE_NAME }}
           layers: true
-          oci: true
+          oci: false
           tags: ${{ steps.docker-metadata.outputs.tags }}
           #labels: ${{ steps.docker-metadata.outputs.labels }}
       
@@ -243,7 +243,7 @@ jobs:
           containerfiles: |
             ${{ env.GOREL_ENTRYP_CONTAINERFILE_NAME }}
           layers: true
-          oci: true
+          oci: false
           tags: ${{ steps.docker-metadata.outputs.tags }}
           #labels: ${{ steps.docker-metadata.outputs.labels }}
 
