@@ -127,7 +127,7 @@ jobs:
           layers: true
           oci: true
           tags: ${{ steps.docker-metadata.outputs.tags }}
-          labels: ${{ steps.docker-metadata.outputs.labels }}
+          #labels: ${{ steps.docker-metadata.outputs.labels }}
       
       - name: Check images created by buildah
         run: buildah images
@@ -245,7 +245,7 @@ jobs:
           layers: true
           oci: true
           tags: ${{ steps.docker-metadata.outputs.tags }}
-          labels: ${{ steps.docker-metadata.outputs.labels }}
+          #labels: ${{ steps.docker-metadata.outputs.labels }}
 
       - name: Check images created by buildah
         run: buildah images
