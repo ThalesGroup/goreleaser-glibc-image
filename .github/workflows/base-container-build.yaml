@@ -121,7 +121,7 @@ jobs:
         id: buildah
         uses: redhat-actions/buildah-build@v2
         with:
-          context: ${{ env.BUILDAH_BUILD_CONTEXT }}
+          #context: ${{ env.BUILDAH_BUILD_CONTEXT }}
           containerfiles: |
             ${{ env.BASE_CONTAINERFILE_NAME }}
           layers: true
@@ -129,6 +129,9 @@ jobs:
           tags: ${{ steps.docker-metadata.outputs.tags }}
           labels: ${{ steps.docker-metadata.outputs.labels }}
       
+      - name: Check images created by buildah
+        run: buildah images
+
       - name: push to ghcr registry with redhat-actions/push-to-registry
         id: push-to-ghcr
         uses: redhat-actions/push-to-registry@v2
@@ -236,13 +239,16 @@ jobs:
         id: buildah
         uses: redhat-actions/buildah-build@v2
         with:
-          context: ${{ env.BUILDAH_BUILD_CONTEXT }}
+          #context: ${{ env.BUILDAH_BUILD_CONTEXT }}
           containerfiles: |
             ${{ env.GOREL_ENTRYP_CONTAINERFILE_NAME }}
           layers: true
           oci: true
           tags: ${{ steps.docker-metadata.outputs.tags }}
           labels: ${{ steps.docker-metadata.outputs.labels }}
+
+      - name: Check images created by buildah
+        run: buildah images
 
       - name: push to ghcr registry with redhat-actions/push-to-registry
         id: push-to-ghcr
