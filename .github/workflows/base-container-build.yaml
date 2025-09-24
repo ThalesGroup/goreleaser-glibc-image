@@ -136,7 +136,7 @@ jobs:
         id: push-to-ghcr
         uses: redhat-actions/push-to-registry@v2
         with:
-          image: ${{ steps.buildah.outputs.image }}
+          image: ${{ steps.set-oci-image-url.outputs.oci_image_url }} # needs to be lowercase
           tags: ${{ steps.buildah.outputs.tags }}
           registry: ${{ env.OCI_REGISTRY }}
           username: ${{ github.actor }}
@@ -254,7 +254,7 @@ jobs:
         id: push-to-ghcr
         uses: redhat-actions/push-to-registry@v2
         with:
-          image: ${{ steps.buildah.outputs.image }}
+          image: ${{ steps.set-oci-image-url.outputs.oci_image_url }} # needs to be lowercase
           tags: ${{ steps.buildah.outputs.tags }}
           registry: ${{ env.OCI_REGISTRY }}
           username: ${{ github.actor }}
