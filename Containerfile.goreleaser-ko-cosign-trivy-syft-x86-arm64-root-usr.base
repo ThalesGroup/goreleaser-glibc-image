@@ -20,13 +20,13 @@
 
 # Set Go & tools versions. Be carreful when upgrading these versions, make sure
 # to keep them in sync with the version golang
-ARG GOLANG_VERSION=1.24.5
-ARG TRIVY_VERSION=0.65.0
-ARG SYFT_VERSION=1.29.1
-ARG COSIGN_VERSION=2.5.3
+ARG GOLANG_VERSION=1.25.1
+ARG TRIVY_VERSION=0.66.0
+ARG SYFT_VERSION=1.33.0
+ARG COSIGN_VERSION=2.6.0
 ARG KO_VERSION=0.18.0
-# goreleaser v2.11.2 ships with go1.24.0
-ARG GORELEASER_VERSION=2.11.2
+# goreleaser v2.12.3 ships with go1.25.1
+ARG GORELEASER_VERSION=2.12.3
 
 # Set Debian version name (e.g. bookworm v12)
 ARG DEBIAN_VERSION=bookworm
