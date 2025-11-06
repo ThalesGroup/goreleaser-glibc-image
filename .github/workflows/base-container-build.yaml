@@ -5,13 +5,13 @@
 name: "Build a container that ship with goreleaser, cosign, ko-build, trivy, syft and push to GitHub Container Registry (GHCR)"
 
 on:
-    pull_request:
-      branches:
-        - main
-        - release/*
-    push:
-      branches:
-        - main
+  pull_request:
+    branches:
+      - main
+      - release/*
+  push:
+    branches:
+      - main
     tags:
         - "*"
 
