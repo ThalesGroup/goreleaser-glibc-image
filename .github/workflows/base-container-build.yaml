@@ -12,8 +12,8 @@ on:
     push:
       branches:
         - main
-        - containerfiles # TODO: remove after testing
-        - cosign-slsa # TODO: remove after testing
+    tags:
+        - "*"
 
 # Global KANIKO Variables:
 # See: https://github.com/int128/kaniko-action
