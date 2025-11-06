@@ -51,15 +51,17 @@ ARG APP_GROUP="goreleaser"
 ARG APP_GROUP_GID="5678"
 
 #==============================================================================#
-# Go Debian image with support for both linux/amd64 and linux/arm64
+# Go Debian image with support for linux/amd64, linux/riscv64 and linux/arm64
 #==============================================================================#
 FROM ${BUILDER_IMAGE_REGISTRY}/${BUILDER_IMAGE_NAME}:${BUILDER_IMAGE_TAG} AS builder-base
 
-# Install linux/arm64 GCC
+# Install gcc for linux/amd64, linux/riscv64 and linux/arm64
 RUN apt-get update && apt-get install -y \
         git \
         curl \
         make \
+        gcc-aarch64-linux-gnu \
+        gcc-riscv64-linux-gnu
     && rm -rf /var/lib/apt/lists/*
 
 #==============================================================================#
